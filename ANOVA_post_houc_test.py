@@ -7,29 +7,41 @@ import pandas as pd
 import numpy as np
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-def perform_anova(data, features, group_col="task_index"):
+def perform_anova(data, features, group_col):
     """
-    Perform one-way ANOVA for each feature across unique groups in the specified column.
+    Perform one-way ANOVA for each numeric feature across unique groups.
     
-    Parameters:
-    - data (pd.DataFrame): The dataset containing the features and grouping column.
-    - features (list of str): List of feature names to analyze.
-    - group_col (str): The column name used for grouping (default: "task_index").
-    
+    Skips non-numeric features automatically.
+
     Returns:
     - pd.DataFrame: DataFrame containing ANOVA results with p-values.
     """
     anova_results = []
-    
+
     for feature in features:
-        groups = [data[data[group_col] == task][feature].dropna() for task in data[group_col].unique()]
-        if all(len(group) > 1 for group in groups):  # Ensure each group has enough data
-            anova_stat, p_value = stats.f_oneway(*groups)
-            anova_results.append({"Feature": feature, "P-value": p_value})
+        if not pd.api.types.is_numeric_dtype(data[feature]):
+            print(f"⚠️ Skipping non-numeric feature: '{feature}'")
+            continue
+
+        groups = [
+            data[data[group_col] == group][feature].dropna()
+            for group in data[group_col].unique()
+        ]
+
+        # Ensure all groups have at least 2 values
+        if all(len(group) > 1 for group in groups):
+            try:
+                anova_stat, p_value = stats.f_oneway(*groups)
+                anova_results.append({"Feature": feature, "P-value": p_value})
+            except Exception as e:
+                print(f"⚠️ Error running ANOVA on '{feature}': {e}")
+                anova_results.append({"Feature": feature, "P-value": None})
         else:
-            anova_results.append({"Feature": feature, "P-value": None})  # Handle insufficient data
-    
+            print(f"⚠️ Skipping '{feature}' due to insufficient data in some groups.")
+            anova_results.append({"Feature": feature, "P-value": None})
+
     return pd.DataFrame(anova_results)
+
 
 
 
@@ -42,7 +54,7 @@ def perform_anova(data, features, group_col="task_index"):
 def analyze_semantic_features(data, semantic_features, group_column):
     """
     Performs Tukey's HSD post-hoc test, visualizes feature distributions with boxplots,
-    and compares feature means between English and Chinese languages.
+    and compares feature means between the English and Chinese languages.
     
     Parameters:
     - data (pd.DataFrame): The dataset containing semantic features.
@@ -69,13 +81,7 @@ def analyze_semantic_features(data, semantic_features, group_column):
     num_rows = int(np.ceil(num_features / 3))  # Dynamic row calculation
     plt.figure(figsize=(15, 5 * num_rows))  # Adjust figure size
 
-    # Visualize boxplots
-    # for i, feature in enumerate(semantic_features, 1):
-    #     plt.subplot(num_rows, 3, i)  # Dynamically adjust subplots
-    #     sns.boxplot(x=group_column, y=feature, data=data, palette="coolwarm")
-    #     plt.xticks(rotation=45)
-    #     plt.title(f"Boxplot of {feature} across task types")
-        # Visualize boxplots
+    
     for i, feature in enumerate(semantic_features, 1):
         if not pd.api.types.is_numeric_dtype(data[feature]):
             print(f"⚠️ Skipping non-numeric feature for boxplot: '{feature}'")
@@ -125,49 +131,3 @@ def analyze_semantic_features(data, semantic_features, group_column):
 
 
 
-
-# semantic_features_simple = [
-#    'word_repetition_rate', 'idea_repetition_rate',
-#        'semantic_outlier_rate', 'referential_ambiguity',
-#        'abstract_vs_concrete_ratio', 'lexical_diversity',
-#        'sentence_length_variation', 'pause_frequency', 'lexical_redundancy',
-#        'content_density', 'syntactic_simplicity', 'semantic_drift',
-#        'pronoun_to_noun_ratio', 'lexical_sophistication'
-# ]
-
-# Remove the folllowing features
-# ⚠️ Feature 'Gender' is not numeric.
-# ⚠️ Feature 'Source' is not numeric.
-# ⚠️ Feature 'text' is not numeric.
-# ⚠️ Feature 'Media' is not numeric.
-# ⚠️ Feature 'Continents' is not numeric.
-# ⚠️ Feature 'PID' is not numeric.
-# ⚠️ Feature 'Countries' is not numeric.
-# ⚠️ Feature 'Duration' is not numeric.
-# ⚠️ Feature 'Location' is not numeric.
-# ⚠️ Feature 'Diagnosis' is not numeric.
-# ⚠️ Feature 'lemmas' is not numeric.
-# ⚠️ Feature 'Languages' is not numeric.
-# ⚠️ Feature 'Dataset' is not numeric.
-# ⚠️ Feature 'Task' is not numeric.
-# ⚠️ Feature 'Text_interviewer' is not numeric.
-# ⚠️ Feature 'Date' is not numeric.
-# ⚠️ Feature 'Moca' is not numeric.
-# ⚠️ Feature 'Text_participant' is not numeric.
-# ⚠️ Feature 'Transcriber' is not numeric.
-# ⚠️ Feature 'tokens' is not numeric.
-# ⚠️ Feature 'Setting' is not numeric.
-# ⚠️ Feature 'File_ID' is not numeric.
-# ⚠️ Feature 'Participants' is not numeric.
-# ⚠️ Feature 'Modality' is not numeric.
-# ⚠️ Feature 'Comment' is not numeric.
-# ⚠️ Feature 'Education' is not numeric.
-
-
-# Adding task index column
-#combined_df_elfen["task_index"]= combined_df_elfen["Languages"]+combined_df_elfen["File_ID"].apply(lambda x: x.split("-")[2])
-
-
-# Filtering
-# filter=result_elfen[result_elfen['P-value'] < 0.05]['Feature'].reset_index(drop=True)
-# new=combined_df_elfen[filter]
