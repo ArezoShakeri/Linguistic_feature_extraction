@@ -17,3 +17,12 @@ Removes non-numeric features and filters out features with excessive missing or 
 ### **4. Visualization**
 
 Feature distribution and boxplot plots for comparison across groups or tasks.
+
+
+```
+├── anova_posthoc.py         # One-way ANOVA + Tukey HSD with visualizations
+├── feature_cleaning.py      # Clean datasets, remove non-numeric/high-missing features
+├── extract_elfen.py         # Elfen extractor: surface, emotion, lexical richness, POS
+├── extract_lftk.py          # LFTK extractor: broad linguistic feature set
+├── visualize_features.py    # Distributions & boxplots across groups/tasks
+```
